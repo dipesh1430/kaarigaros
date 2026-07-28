@@ -16,6 +16,7 @@ import {
 import { useState } from "react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
+import { Toaster } from "@/components/shared/Toaster";
 
 const navItems = [
   { href: "/batches", label: "Dashboard", icon: LayoutDashboard },
@@ -35,9 +36,11 @@ export default function DashboardLayout({
 
   return (
     <div className="flex min-h-screen bg-background">
+      {/* Toast notifications */}
+      <Toaster position="top-right" richColors closeButton />
+
       {/* ── Desktop Sidebar ── */}
       <aside className="hidden w-64 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
-        {/* Logo */}
         <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-6">
           <Shirt className="h-6 w-6 text-primary" />
           <h1 className="font-heading text-lg font-bold text-primary">
@@ -45,7 +48,6 @@ export default function DashboardLayout({
           </h1>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 space-y-1 px-3 py-4">
           {navItems.map((item) => {
             const isActive = pathname.startsWith(item.href);
@@ -67,7 +69,6 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        {/* Footer — Logout */}
         <div className="border-t border-sidebar-border p-3">
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
@@ -103,13 +104,10 @@ export default function DashboardLayout({
       {/* ── Mobile menu overlay ── */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-30 lg:hidden">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/30"
             onClick={() => setMobileMenuOpen(false)}
           />
-
-          {/* Drawer */}
           <div className="absolute inset-y-0 left-0 w-64 bg-sidebar shadow-xl">
             <nav className="mt-16 space-y-1 px-3 py-4">
               {navItems.map((item) => {
@@ -131,8 +129,6 @@ export default function DashboardLayout({
                   </Link>
                 );
               })}
-
-              {/* Mobile logout */}
               <button
                 onClick={() => {
                   setMobileMenuOpen(false);

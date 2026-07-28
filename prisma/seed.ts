@@ -59,13 +59,35 @@ async function main() {
       phone: "9876543213",
       selfPickup: false,
     },
+    {
+      name: "Rajesh bhai",
+      type: "stitching" as const,
+      gender: "Male",
+      phone: "9876543214",
+      selfPickup: false,
+    },
+    {
+      name: "Geeta ben",
+      type: "button" as const,
+      gender: "Female",
+      phone: "9876543215",
+      selfPickup: false,
+    },
+    {
+      name: "Vinod bhai",
+      type: "stitching" as const,
+      gender: "Male",
+      phone: "9876543216",
+      selfPickup: true,
+      active: false, // inactive for demo
+    },
   ];
 
   for (const k of karigars) {
     await prisma.karigar.upsert({
       where: { phone: k.phone },
       update: {},
-      create: k,
+      create: k, // `active: false` will be picked up correctly from the object
     });
   }
   console.log(`✓ ${karigars.length} karigars seeded`);
