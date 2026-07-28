@@ -1,26 +1,162 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════
+   "Textile Ledger" — KaarigarOS Design Theme
+   Inspired by workshop khata notebooks + textile dye colors
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── CSS Custom Properties ── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Warm paper background — not stark white */
+  --background: #faf7f2;
+  --foreground: #2b2420;
+
+  /* Cards & surfaces */
+  --card: #ffffff;
+  --card-foreground: #2b2420;
+
+  /* Warm terracotta/turmeric — primary dye accent */
+  --primary: #b45309;
+  --primary-foreground: #fffbeb;
+
+  /* Deep teal — indigo dye inspired */
+  --secondary: #1e4b4a;
+  --secondary-foreground: #f0fdfa;
+
+  /* Deep rose/thread color — accents, badges */
+  --accent: #9d174d;
+  --accent-foreground: #fff1f2;
+
+  /* Muted tones — secondary surfaces */
+  --muted: #ede7dd;
+  --muted-foreground: #78716c;
+
+  /* Borders & dividers */
+  --border: #e7e0d3;
+  --ring: #b45309;
+
+  /* Semantic colors */
+  --destructive: #b91c1c;
+  --destructive-foreground: #fef2f2;
+  --success: #166534;
+  --warning: #b45309;
+
+  /* Input fields */
+  --input: #e7e0d3;
+
+  /* Sidebar */
+  --sidebar: #ffffff;
+  --sidebar-foreground: #2b2420;
+  --sidebar-muted: #f5f2ed;
+  --sidebar-border: #e7e0d3;
+
+  /* Border radius */
+  --radius: 0.5rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-input: var(--input);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-border: var(--sidebar-border);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Manrope", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 0.125rem);
+  --radius-sm: calc(var(--radius) - 0.25rem);
 }
 
+/* ── Dark mode (optional, Phase 2) ── */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #1c1917;
+    --foreground: #f5f1ea;
+    --card: #292420;
+    --card-foreground: #f5f1ea;
+    --primary: #d97706;
+    --primary-foreground: #1c1917;
+    --secondary: #2dd4bf;
+    --secondary-foreground: #1c1917;
+    --muted: #3a3530;
+    --muted-foreground: #a8a29e;
+    --border: #44403c;
+    --sidebar: #292420;
+    --sidebar-foreground: #f5f1ea;
+    --sidebar-muted: #3a3530;
+    --sidebar-border: #44403c;
+    --input: #44403c;
   }
 }
 
+/* ── Base styles ── */
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── Headings ── */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+}
+
+/* ── Numbers in heading font with tabular-nums ── */
+.tabular-nums {
+  font-family: var(--font-heading);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Utility: status badge colors ── */
+.status-received {
+  @apply bg-stone-200 text-stone-700;
+}
+.status-cutting {
+  @apply bg-amber-100 text-amber-800;
+}
+.status-stitching {
+  @apply bg-teal-100 text-teal-800;
+}
+.status-interlock {
+  @apply bg-cyan-100 text-cyan-800;
+}
+.status-press {
+  @apply bg-rose-100 text-rose-800;
+}
+.status-ready {
+  @apply bg-blue-100 text-blue-800;
+}
+.status-dispatched {
+  @apply bg-indigo-100 text-indigo-800;
+}
+.status-billed {
+  @apply bg-green-100 text-green-800;
 }

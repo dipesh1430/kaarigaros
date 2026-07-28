@@ -1,0 +1,251 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Merchant {
+  id            Int        @id @default(autoincrement())
+  name          String     @db.VarChar(150)
+  contactPerson String?    @db.VarChar(100)
+  phone         String?    @db.VarChar(15)
+  address       String?
+  createdAt     DateTime   @default(now())
+  batches       Batch[]
+  billings      Billing[]
+}
+
+model Karigar {
+  id              Int                @id @default(autoincrement())
+  name            String             @db.VarChar(100)
+  type            KarigarType
+  gender          String?            @db.VarChar(10)
+  phone           String             @unique @db.VarChar(15)
+  pinHash         String?            @db.VarChar(255)
+  address         String?
+  selfPickup      Boolean            @default(false)
+  active          Boolean            @default(true)
+  createdAt       DateTime           @default(now())
+  assignments     KarigarAssignment[]
+  settlements     KarigarSettlement[]
+  ledgerEntries   KarigarLedger[]
+  paymentRequests PaymentRequest[]
+}
+
+enum KarigarType {
+  stitching
+  button
+}
+
+model PaymentRequest {
+  id                   Int                  @id @default(autoincrement())
+  karigar              Karigar              @relation(fields: [karigarId], references: [id])
+  karigarId            Int
+  requestedAt          DateTime             @default(now())
+  amountOwedAtRequest  Decimal              @db.Decimal(12, 2)
+  status               PaymentRequestStatus @default(pending)
+  resolvedSettlementId Int?
+  notes                String?
+}
+
+enum PaymentRequestStatus {
+  pending
+  acknowledged
+  settled
+}
+
+model Batch {
+  id                   Int              @id @default(autoincrement())
+  merchant             Merchant         @relation(fields: [merchantId], references: [id])
+  merchantId           Int
+  designName           String           @db.VarChar(100)
+  color                String           @db.VarChar(50)
+  garmentType          GarmentType
+  fabricReceivedMeters Decimal          @db.Decimal(10, 2)
+  ratePerPiece         Decimal          @db.Decimal(10, 2)
+  totalPiecesPlanned   Int?
+  dateReceived         DateTime         @db.Date
+  status               BatchStatus      @default(received)
+  createdAt            DateTime         @default(now())
+
+  cuttingLogs    CuttingLog[]
+  assignments    KarigarAssignment[]
+  qualityChecks  QualityCheck[]
+  dispatches     Dispatch[]
+  samplePieces   SamplePiece[]
+}
+
+enum GarmentType {
+  kurti
+  pant
+}
+
+enum BatchStatus {
+  received
+  cutting
+  stitching
+  interlock
+  press
+  ready
+  dispatched
+  billed
+}
+
+model CuttingLog {
+  id               Int      @id @default(autoincrement())
+  batch            Batch    @relation(fields: [batchId], references: [id])
+  batchId          Int
+  piecesCut        Int
+  fabricUsedMeters Decimal  @db.Decimal(10, 2)
+  cuttingDate      DateTime @db.Date
+  notes            String?
+}
+
+model KarigarAssignment {
+  id              Int              @id @default(autoincrement())
+  batch           Batch            @relation(fields: [batchId], references: [id])
+  batchId         Int
+  karigar         Karigar          @relation(fields: [karigarId], references: [id])
+  karigarId       Int
+  piecesAssigned  Int
+  dateGiven       DateTime         @db.Date
+  dateCollected   DateTime?        @db.Date
+  piecesReturned  Int?
+  status          AssignmentStatus @default(in_progress)
+
+  settlementItems SettlementItem[]
+}
+
+enum AssignmentStatus {
+  in_progress
+  completed
+  paid
+}
+
+model QualityCheck {
+  id              Int        @id @default(autoincrement())
+  batch           Batch      @relation(fields: [batchId], references: [id])
+  batchId         Int
+  checkedBy       CheckedBy
+  piecesChecked   Int?
+  piecesRejected  Int        @default(0)
+  rejectionReason String?
+  checkDate       DateTime   @db.Date
+}
+
+enum CheckedBy {
+  home
+  press_vendor
+}
+
+model Dispatch {
+  id               Int              @id @default(autoincrement())
+  batch            Batch            @relation(fields: [batchId], references: [id])
+  batchId          Int
+  chalanNumber     String           @db.VarChar(50)
+  piecesDispatched Int
+  dispatchDate     DateTime         @db.Date
+  notes            String?
+
+  billingDispatches BillingDispatch[]
+}
+
+model Billing {
+  id            Int              @id @default(autoincrement())
+  merchant      Merchant         @relation(fields: [merchantId], references: [id])
+  merchantId    Int
+  billingDate   DateTime         @db.Date
+  totalPieces   Int
+  grossAmount   Decimal          @db.Decimal(12, 2)
+  tdsPercent    Decimal          @default(0) @db.Decimal(5, 2)
+  tdsAmount     Decimal          @default(0) @db.Decimal(12, 2)
+  netAmount     Decimal          @db.Decimal(12, 2)
+  paymentMode   PaymentMode
+  paymentStatus PaymentStatus    @default(pending)
+  paymentDate   DateTime?        @db.Date
+
+  billingDispatches BillingDispatch[]
+}
+
+enum PaymentMode {
+  cash
+  cheque
+}
+
+enum PaymentStatus {
+  pending
+  received
+}
+
+model BillingDispatch {
+  billing    Billing   @relation(fields: [billingId], references: [id])
+  billingId  Int
+  dispatch   Dispatch  @relation(fields: [dispatchId], references: [id])
+  dispatchId Int
+
+  @@id([billingId, dispatchId])
+}
+
+model KarigarSettlement {
+  id                  Int              @id @default(autoincrement())
+  karigar             Karigar          @relation(fields: [karigarId], references: [id])
+  karigarId           Int
+  settlementDate      DateTime         @db.Date
+  calculatedAmount    Decimal          @db.Decimal(12, 2)
+  ledgerBalanceBefore Decimal          @default(0) @db.Decimal(12, 2)
+  netPayable          Decimal          @db.Decimal(12, 2)
+  amountPaid          Decimal          @db.Decimal(12, 2)
+  roundingDiff        Decimal          @default(0) @db.Decimal(12, 2)
+  paymentMode         SettlementMode
+  notes               String?
+  createdAt           DateTime         @default(now())
+
+  items              SettlementItem[]
+  ledgerEntries      KarigarLedger[]
+}
+
+enum SettlementMode {
+  cash
+  gpay
+}
+
+model SettlementItem {
+  settlement    KarigarSettlement  @relation(fields: [settlementId], references: [id])
+  settlementId  Int
+  assignment    KarigarAssignment  @relation(fields: [assignmentId], references: [id])
+  assignmentId  Int
+  piecesCounted Int
+  amount        Decimal            @db.Decimal(12, 2)
+
+  @@id([settlementId, assignmentId])
+}
+
+model KarigarLedger {
+  id                  Int                @id @default(autoincrement())
+  karigar             Karigar            @relation(fields: [karigarId], references: [id])
+  karigarId           Int
+  entryDate           DateTime           @db.Date
+  entryType           LedgerEntryType
+  amount              Decimal            @db.Decimal(12, 2)
+  relatedSettlement   KarigarSettlement? @relation(fields: [relatedSettlementId], references: [id])
+  relatedSettlementId Int?
+  notes               String?
+  createdAt           DateTime           @default(now())
+}
+
+enum LedgerEntryType {
+  withdrawal
+  rounding_carry
+}
+
+model SamplePiece {
+  id              Int       @id @default(autoincrement())
+  batch           Batch     @relation(fields: [batchId], references: [id])
+  batchId         Int
+  size            String    @default("XL") @db.VarChar(10)
+  sentToPressDate DateTime? @db.Date
+  notes           String?
+}
