@@ -19,6 +19,7 @@ import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { KarigarDetailSkeleton } from "@/components/karigars/KarigarDetailSkeleton";
 import { KarigarFormSheet } from "@/components/karigars/KarigarFormSheet";
+import { WithdrawalForm } from "@/components/karigars/WithdrawalForm";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +50,7 @@ interface SettlementData {
   settlementDate: string;
   netPayable: string;
   amountPaid: string;
+  roundingDiff: string;
   paymentMode: string;
 }
 
@@ -234,8 +236,10 @@ export default function KarigarDetailPage() {
         )}
         {activeTab === "ledger" && (
           <LedgerTab
+            karigarId={karigar.id}
             ledgerEntries={karigar.ledgerEntries}
             settlements={karigar.settlements}
+            onSuccess={fetchKarigar}
           />
         )}
       </motion.div>
@@ -415,30 +419,85 @@ function AssignmentsTab({
 
 /* ── Ledger Tab ── */
 function LedgerTab({
+  karigarId,
   ledgerEntries,
   settlements,
+  onSuccess,
 }: {
+  karigarId: number;
   ledgerEntries: LedgerEntryData[];
   settlements: SettlementData[];
+  onSuccess?: () => void;
 }) {
   const hasData = ledgerEntries.length > 0 || settlements.length > 0;
 
-  if (!hasData) {
-    return (
-      <EmptyState
-        title="No ledger activity yet"
-        description="Withdrawals and settlement records will appear here."
-      />
-    );
-  }
+  // Compute running balance (entries are ordered by date desc, so reverse for running)
+  const sorted = [...ledgerEntries].sort(
+    (a, b) => new Date(a.entryDate).getTime() - new Date(b.entryDate).getTime()
+  );
+
+  let runningBalance = 0;
+  const withBalance = sorted.map((entry) => {
+    runningBalance += Number(entry.amount);
+    return { ...entry, balance: runningBalance };
+  });
+
+  // Reverse to show most recent first, with correct running balance
+  const latestBalance = runningBalance;
 
   return (
-    <div className="space-y-8">
-      {/* Ledger Entries */}
+    <div className="space-y-6">
+      {/* Withdrawal Action */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-heading text-base font-semibold text-foreground">
+            Ledger
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Withdrawals reduce the next settlement. Rounding carries adjust for over/under payment.
+          </p>
+        </div>
+        <WithdrawalForm karigarId={karigarId} onSuccess={onSuccess} />
+      </div>
+
+      {/* Current Balance Card */}
+      <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Current Open Ledger Balance
+        </p>
+        <p
+          className={cn(
+            "mt-1 font-heading text-3xl font-bold tabular-nums",
+            latestBalance > 0
+              ? "text-amber-600"
+              : latestBalance < 0
+                ? "text-blue-600"
+                : "text-foreground"
+          )}
+        >
+          {latestBalance === 0 ? "Settled" : `${latestBalance >= 0 ? "+" : ""}${formatCurrency(latestBalance)}`}
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {latestBalance > 0
+            ? `Karigar owes ${formatCurrency(latestBalance)} (deducted from next settlement)`
+            : latestBalance < 0
+              ? `Company owes ${formatCurrency(Math.abs(latestBalance))} (added to next settlement)`
+              : "No open balance"}
+        </p>
+      </div>
+
+      {!hasData && ledgerEntries.length === 0 && (
+        <EmptyState
+          title="No ledger activity yet"
+          description="Withdrawals and rounding carries will appear here as the karigar works and gets paid."
+        />
+      )}
+
+      {/* Ledger Entries with Running Balance */}
       {ledgerEntries.length > 0 && (
         <div>
-          <h3 className="mb-3 font-heading text-base font-semibold text-foreground">
-            Ledger Entries
+          <h3 className="mb-3 font-heading text-sm font-semibold text-foreground">
+            Ledger Entries ({ledgerEntries.length})
           </h3>
           <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <table className="w-full text-sm">
@@ -453,13 +512,16 @@ function LedgerTab({
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Amount
                   </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Balance
+                  </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Notes
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {ledgerEntries.map((entry) => (
+                {[...withBalance].reverse().map((entry) => (
                   <tr
                     key={entry.id}
                     className="border-b border-border last:border-0 transition-colors hover:bg-muted/30"
@@ -480,7 +542,22 @@ function LedgerTab({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right font-heading tabular-nums text-foreground">
+                      {Number(entry.amount) >= 0 ? "+" : ""}
                       {formatCurrency(entry.amount)}
+                    </td>
+                    <td className="px-4 py-3 text-right font-heading tabular-nums">
+                      <span
+                        className={cn(
+                          "text-xs font-medium",
+                          entry.balance > 0
+                            ? "text-amber-600"
+                            : entry.balance < 0
+                              ? "text-blue-600"
+                              : "text-muted-foreground"
+                        )}
+                      >
+                        {formatCurrency(entry.balance)}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
                       {entry.notes ?? "—"}
@@ -496,8 +573,8 @@ function LedgerTab({
       {/* Settlements */}
       {settlements.length > 0 && (
         <div>
-          <h3 className="mb-3 font-heading text-base font-semibold text-foreground">
-            Settlement History
+          <h3 className="mb-3 font-heading text-sm font-semibold text-foreground">
+            Settlement History ({settlements.length})
           </h3>
           <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
             <table className="w-full text-sm">
@@ -510,7 +587,10 @@ function LedgerTab({
                     Net Payable
                   </th>
                   <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    Amount Paid
+                    Paid
+                  </th>
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                    Rounding
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                     Mode
@@ -531,6 +611,23 @@ function LedgerTab({
                     </td>
                     <td className="px-4 py-3 text-right font-heading tabular-nums text-success">
                       {formatCurrency(s.amountPaid)}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {Number(s.roundingDiff) !== 0 ? (
+                        <span
+                          className={cn(
+                            "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
+                            Number(s.roundingDiff) > 0
+                              ? "bg-amber-100 text-amber-700"
+                              : "bg-blue-100 text-blue-700"
+                          )}
+                        >
+                          {Number(s.roundingDiff) > 0 ? "+" : ""}
+                          {formatCurrency(s.roundingDiff)}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 capitalize text-muted-foreground">
                       {s.paymentMode}
