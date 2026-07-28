@@ -7,6 +7,14 @@ datasource db {
   provider = "postgresql"
 }
 
+model Admin {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique @db.VarChar(255)
+  password  String   @db.VarChar(255)
+  name      String   @db.VarChar(100)
+  createdAt DateTime @default(now())
+}
+
 model Merchant {
   id            Int        @id @default(autoincrement())
   name          String     @db.VarChar(150)
