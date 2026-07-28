@@ -20,6 +20,7 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { KarigarDetailSkeleton } from "@/components/karigars/KarigarDetailSkeleton";
 import { KarigarFormSheet } from "@/components/karigars/KarigarFormSheet";
 import { WithdrawalForm } from "@/components/karigars/WithdrawalForm";
+import { SetPinForm } from "@/components/karigars/SetPinForm";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -250,7 +251,8 @@ export default function KarigarDetailPage() {
 /* ── Overview Tab ── */
 function OverviewTab({ karigar }: { karigar: KarigarFull }) {
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
       <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
         <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           Personal Info
@@ -331,6 +333,13 @@ function OverviewTab({ karigar }: { karigar: KarigarFull }) {
           </div>
         </dl>
       </div>
+      </div>
+
+      {/* Portal PIN */}
+      <SetPinForm
+        karigarId={karigar.id}
+        hasPin={false}
+      />
     </div>
   );
 }

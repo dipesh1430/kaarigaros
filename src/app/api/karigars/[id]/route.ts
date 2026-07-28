@@ -67,6 +67,13 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const body = await request.json();
 
+    // Handle PIN separately — hash it before storing
+    let pinHash: string | undefined;
+    if (body.pin) {
+      const bcrypt = await import("bcryptjs");
+      pinHash = await bcrypt.hash(body.pin, 10);
+    }
+
     // Allow partial updates + active toggle
     const parsed = karigarSchema.partial().safeParse(body);
 
@@ -79,7 +86,10 @@ export async function PATCH(request: Request, context: RouteContext) {
 
     const karigar = await prisma.karigar.update({
       where: { id: karigarId },
-      data: parsed.data,
+      data: {
+        ...parsed.data,
+        ...(pinHash && { pinHash }),
+      },
     });
 
     return NextResponse.json(karigar);
