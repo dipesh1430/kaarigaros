@@ -20,6 +20,7 @@ import { CuttingLogForm } from "@/components/batches/CuttingLogForm";
 import { YieldChart } from "@/components/batches/YieldChart";
 import { AssignmentForm } from "@/components/assignments/AssignmentForm";
 import { MarkReturnedSheet } from "@/components/assignments/MarkReturnedSheet";
+import { QualityCheckForm } from "@/components/quality/QualityCheckForm";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { calculateTotalYield } from "@/lib/calculations/yield";
 
@@ -484,61 +485,144 @@ export default function BatchDetailPage() {
         )}
 
         {activeTab === "quality" && (
-          <div>
-            {batch.qualityChecks.length > 0 ? (
-              <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border bg-muted/50">
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Checkpoint
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Checked
-                      </th>
-                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Rejected
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Reason
-                      </th>
-                      <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                        Date
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {batch.qualityChecks.map((qc: any) => (
-                      <tr
-                        key={qc.id}
-                        className="border-b border-border last:border-0"
-                      >
-                        <td className="px-4 py-3 capitalize text-foreground">
-                          {qc.checkedBy === "home" ? "Home Check" : "Press Vendor"}
-                        </td>
-                        <td className="px-4 py-3 text-right font-heading tabular-nums text-foreground">
-                          {qc.piecesChecked ?? "—"}
-                        </td>
-                        <td className="px-4 py-3 text-right font-heading tabular-nums text-destructive">
-                          {qc.piecesRejected}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {qc.rejectionReason ?? "—"}
-                        </td>
-                        <td className="px-4 py-3 text-muted-foreground">
-                          {formatDate(qc.checkDate)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          <div className="space-y-8">
+            {/* Home QC Section */}
+            <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+              <div className="border-b border-border bg-amber-50/50 px-6 py-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-amber-100">
+                    <svg className="h-4 w-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                  </div>
+                  <h3 className="font-heading font-semibold text-foreground">Home Check</h3>
+                  <span className="text-xs text-muted-foreground">— visual inspection before pressing</span>
+                </div>
               </div>
-            ) : (
-              <EmptyState
-                title="No quality checks yet"
-                description="QC entries will appear here as you log home and press vendor checks."
-              />
-            )}
+              <div className="p-6">
+                {/* Home QC entries */}
+                {batch.qualityChecks.filter((qc: any) => qc.checkedBy === "home").length > 0 ? (
+                  <div className="mb-4 overflow-hidden rounded-lg border border-border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Checked</th>
+                          <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rejected</th>
+                          <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rate</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reason</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {batch.qualityChecks.filter((qc: any) => qc.checkedBy === "home").map((qc: any) => {
+                          const rate = qc.piecesChecked
+                            ? Math.round((qc.piecesRejected / qc.piecesChecked) * 100)
+                            : null;
+                          return (
+                            <tr key={qc.id} className="border-b border-border last:border-0">
+                              <td className="px-4 py-2.5 font-heading tabular-nums text-foreground">{qc.piecesChecked}</td>
+                              <td className="px-4 py-2.5 text-right font-heading tabular-nums text-destructive">{qc.piecesRejected}</td>
+                              <td className="px-4 py-2.5 text-right">
+                                {rate !== null && (
+                                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                    rate > 10 ? "bg-red-100 text-red-700" : rate > 5 ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"
+                                  }`}>
+                                    {rate}%
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-2.5 text-muted-foreground">{qc.rejectionReason ?? "—"}</td>
+                              <td className="px-4 py-2.5 text-muted-foreground">{formatDate(qc.checkDate)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="mb-4 text-sm text-muted-foreground">No home check recorded yet.</p>
+                )}
+
+                {/* Home QC Form — only show if batch is in right status */}
+                {(batch.status === "stitching" || batch.status === "interlock") && (
+                  <QualityCheckForm
+                    batchId={batch.id}
+                    currentStatus={batch.status}
+                    onSuccess={fetchBatch}
+                    defaultCheckpoint="home"
+                  />
+                )}
+              </div>
+            </div>
+
+            {/* Press Vendor QC Section */}
+            <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+              <div className="border-b border-border bg-rose-50/50 px-6 py-3">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-rose-100">
+                    <svg className="h-4 w-4 text-rose-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    </svg>
+                  </div>
+                  <h3 className="font-heading font-semibold text-foreground">Press Vendor Check</h3>
+                  <span className="text-xs text-muted-foreground">— formal QC before pressing</span>
+                </div>
+              </div>
+              <div className="p-6">
+                {/* Press QC entries */}
+                {batch.qualityChecks.filter((qc: any) => qc.checkedBy === "press_vendor").length > 0 ? (
+                  <div className="mb-4 overflow-hidden rounded-lg border border-border">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Checked</th>
+                          <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rejected</th>
+                          <th className="px-4 py-2.5 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">Rate</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Reason</th>
+                          <th className="px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground">Date</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {batch.qualityChecks.filter((qc: any) => qc.checkedBy === "press_vendor").map((qc: any) => {
+                          const rate = qc.piecesChecked
+                            ? Math.round((qc.piecesRejected / qc.piecesChecked) * 100)
+                            : null;
+                          return (
+                            <tr key={qc.id} className="border-b border-border last:border-0">
+                              <td className="px-4 py-2.5 font-heading tabular-nums text-foreground">{qc.piecesChecked}</td>
+                              <td className="px-4 py-2.5 text-right font-heading tabular-nums text-destructive">{qc.piecesRejected}</td>
+                              <td className="px-4 py-2.5 text-right">
+                                {rate !== null && (
+                                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+                                    rate > 10 ? "bg-red-100 text-red-700" : rate > 5 ? "bg-amber-100 text-amber-700" : "bg-green-100 text-green-700"
+                                  }`}>
+                                    {rate}%
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-4 py-2.5 text-muted-foreground">{qc.rejectionReason ?? "—"}</td>
+                              <td className="px-4 py-2.5 text-muted-foreground">{formatDate(qc.checkDate)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p className="mb-4 text-sm text-muted-foreground">No press vendor check yet.</p>
+                )}
+
+                {/* Press QC Form — only show if batch is at press stage */}
+                {batch.status === "press" && (
+                  <QualityCheckForm
+                    batchId={batch.id}
+                    currentStatus={batch.status}
+                    onSuccess={fetchBatch}
+                    defaultCheckpoint="press_vendor"
+                  />
+                )}
+              </div>
+            </div>
           </div>
         )}
 
