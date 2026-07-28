@@ -14,9 +14,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create cutting log and update batch status atomically
-    const [cuttingLog] = await prisma.$transaction([
-      prisma.cuttingLog.create({
+    // Create cutting log and conditionally advance batch status within a transaction
+    const cuttingLog = await prisma.$transaction(async (tx) => {
+      const created = await tx.cuttingLog.create({
         data: {
           batchId: parsed.data.batchId,
           piecesCut: parsed.data.piecesCut,
@@ -24,30 +24,16 @@ export async function POST(request: Request) {
           cuttingDate: new Date(parsed.data.cuttingDate),
           notes: parsed.data.notes ?? null,
         },
-      }),
-      prisma.batch.update({
-        where: { id: parsed.data.batchId },
-        data: {
-          // Only advance status if it's still 'received'
-          status:
-            prisma.batch.findUnique({ where: { id: parsed.data.batchId } })
-              .then((b) => (b?.status === "received" ? "cutting" : undefined))
-              .catch(() => undefined) as any,
-        },
-      }),
-    ]);
+      });
 
-    // Second query to apply status update if needed
-    const batch = await prisma.batch.findUnique({
-      where: { id: parsed.data.batchId },
-    });
-
-    if (batch && batch.status === "received") {
-      await prisma.batch.update({
-        where: { id: parsed.data.batchId },
+      // Advance status to 'cutting' only if currently 'received'
+      await tx.batch.updateMany({
+        where: { id: parsed.data.batchId, status: "received" },
         data: { status: "cutting" },
       });
-    }
+
+      return created;
+    });
 
     // Fetch the updated batch with cutting logs
     const updatedBatch = await prisma.batch.findUnique({

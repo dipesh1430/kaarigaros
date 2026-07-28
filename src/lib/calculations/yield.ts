@@ -23,8 +23,8 @@ export function calculateTotalYield(
   fabricReceivedMeters: number | string
 ): number {
   const totalUsed = logs.reduce(
-    (sum, log) => sum + new Decimal(log.fabricUsedMeters).toNumber(),
-    0
+    (sum, log) => sum.add(new Decimal(log.fabricUsedMeters)),
+    new Decimal(0)
   );
   return calculateYieldPercent(totalUsed, fabricReceivedMeters);
 }

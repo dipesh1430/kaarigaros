@@ -18,6 +18,8 @@ import { EmptyState } from "@/components/shared/EmptyState";
 import { BatchDetailSkeleton } from "@/components/batches/BatchDetailSkeleton";
 import { CuttingLogForm } from "@/components/batches/CuttingLogForm";
 import { YieldChart } from "@/components/batches/YieldChart";
+import { AssignmentForm } from "@/components/assignments/AssignmentForm";
+import { MarkReturnedSheet } from "@/components/assignments/MarkReturnedSheet";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { calculateTotalYield } from "@/lib/calculations/yield";
 
@@ -379,7 +381,22 @@ export default function BatchDetailPage() {
         )}
 
         {activeTab === "assignments" && (
-          <div>
+          <div className="space-y-6">
+            {/* Assignments Header + Action */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  {batch.assignments.filter((a) => a.status === "in_progress").length} in progress
+                  {" · "}
+                  {batch.assignments.filter((a) => a.status === "completed" || a.status === "paid").length} completed
+                </p>
+              </div>
+              <AssignmentForm
+                batchId={batch.id}
+                onSuccess={fetchBatch}
+              />
+            </div>
+
             {batch.assignments.length > 0 ? (
               <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
                 <table className="w-full text-sm">
@@ -403,6 +420,9 @@ export default function BatchDetailPage() {
                       <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                         Status
                       </th>
+                      <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                        Action
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -418,6 +438,9 @@ export default function BatchDetailPage() {
                           >
                             {a.karigar.name}
                           </Link>
+                          <span className="ml-1.5 text-xs text-muted-foreground capitalize">
+                            ({a.karigar.type})
+                          </span>
                         </td>
                         <td className="px-4 py-3 text-right font-heading tabular-nums text-foreground">
                           {a.piecesAssigned}
@@ -436,6 +459,16 @@ export default function BatchDetailPage() {
                         <td className="px-4 py-3 text-center">
                           <StatusBadge status={a.status} />
                         </td>
+                        <td className="px-4 py-3 text-right">
+                          {a.status === "in_progress" && (
+                            <MarkReturnedSheet
+                              assignmentId={a.id}
+                              karigarName={a.karigar.name}
+                              piecesAssigned={a.piecesAssigned}
+                              onSuccess={fetchBatch}
+                            />
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -444,7 +477,7 @@ export default function BatchDetailPage() {
             ) : (
               <EmptyState
                 title="No assignments yet"
-                description="Assign bundles to karigars from the Assignments tab."
+                description="Assign bundles to karigars to start tracking their work on this batch."
               />
             )}
           </div>

@@ -6,11 +6,13 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function GET(_request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const batchId = parseInt(id, 10);
 
-    if (isNaN(batchId)) {
+    // Reject any id that contains non-digit characters (e.g. "1junk")
+    if (!/^[0-9]+$/.test(id)) {
       return NextResponse.json({ error: "Invalid batch ID" }, { status: 400 });
     }
+
+    const batchId = parseInt(id, 10);
 
     const batch = await prisma.batch.findUnique({
       where: { id: batchId },
