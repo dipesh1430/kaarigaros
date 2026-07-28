@@ -21,6 +21,7 @@ import { YieldChart } from "@/components/batches/YieldChart";
 import { AssignmentForm } from "@/components/assignments/AssignmentForm";
 import { MarkReturnedSheet } from "@/components/assignments/MarkReturnedSheet";
 import { QualityCheckForm } from "@/components/quality/QualityCheckForm";
+import { DispatchForm } from "@/components/dispatch/DispatchForm";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import { calculateTotalYield } from "@/lib/calculations/yield";
 
@@ -627,7 +628,8 @@ export default function BatchDetailPage() {
         )}
 
         {activeTab === "dispatch" && (
-          <div>
+          <div className="space-y-6">
+            {/* Dispatch History */}
             {batch.dispatches.length > 0 ? (
               <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
                 <table className="w-full text-sm">
@@ -672,9 +674,20 @@ export default function BatchDetailPage() {
               </div>
             ) : (
               <EmptyState
-                title="No dispatches yet"
-                description="Dispatch entries will appear here when you send finished goods to the merchant."
+                title="Not yet dispatched"
+                description="When the batch is ready, record the dispatch details here."
               />
+            )}
+
+            {/* Dispatch Form — only when batch is ready */}
+            {["ready", "press"].includes(batch.status) && (
+              <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+                <DispatchForm
+                  batchId={batch.id}
+                  currentStatus={batch.status}
+                  onSuccess={fetchBatch}
+                />
+              </div>
             )}
           </div>
         )}
