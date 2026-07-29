@@ -25,6 +25,7 @@ export const batchSchema = z.object({
     .string()
     .min(1, "Color is required")
     .max(50, "Color must be under 50 characters"),
+  colors: z.array(z.string().min(1).max(50)).optional(),
   garmentType: z.enum(["kurti", "pant"]),
   fabricReceivedMeters: z.number().positive("Fabric must be > 0"),
   ratePerPiece: z.number().positive("Rate must be > 0"),

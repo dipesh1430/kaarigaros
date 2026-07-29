@@ -31,6 +31,7 @@ interface BatchData {
   dateReceived: string;
   merchant: { name: string };
   cuttingLogs: { fabricUsedMeters: string }[];
+  colors: { id: number; color: string }[];
   _count: { assignments: number };
 }
 
@@ -189,7 +190,11 @@ export default function BatchesPage() {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
-                        {b.color}
+                        <div className="flex flex-wrap gap-1">
+                          {(b.colors?.length ? b.colors.map(c => c.color) : [b.color]).map((c) => (
+                            <span key={c} className="inline-flex rounded bg-muted px-1.5 py-0.5 text-xs">{c}</span>
+                          ))}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">
                         {formatDate(b.dateReceived)}
@@ -226,6 +231,7 @@ export default function BatchesPage() {
                     id={b.id}
                     designName={b.designName}
                     color={b.color}
+                    colors={b.colors}
                     garmentType={b.garmentType}
                     status={b.status}
                     dateReceived={b.dateReceived}

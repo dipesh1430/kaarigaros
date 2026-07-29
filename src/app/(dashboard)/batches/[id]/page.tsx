@@ -64,6 +64,7 @@ interface BatchDetail {
   dateReceived: string;
   status: string;
   merchant: { name: string; id: number };
+  colors: { id: number; color: string }[];
   cuttingLogs: CuttingLog[];
   assignments: Assignment[];
   qualityChecks: any[];
@@ -155,7 +156,7 @@ export default function BatchDetailPage() {
                 <StatusBadge status={batch.status} />
               </div>
               <p className="mt-1 text-sm text-muted-foreground">
-                {batch.color} · {batch.garmentType} · {batch.merchant.name}
+                {batch.colors?.map(c => c.color).join(", ") || batch.color} · {batch.garmentType} · {batch.merchant.name}
               </p>
             </div>
           </div>
@@ -233,7 +234,7 @@ export default function BatchDetailPage() {
                 <dl className="mt-4 space-y-3">
                   {[
                     ["Design", batch.designName],
-                    ["Color", batch.color],
+                    ["Color", batch.colors?.map(c => c.color).join(", ") || batch.color],
                     ["Garment", batch.garmentType],
                     ["Merchant", batch.merchant.name],
                     ["Date Received", formatDate(batch.dateReceived)],

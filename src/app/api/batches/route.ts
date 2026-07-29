@@ -8,6 +8,7 @@ export async function GET() {
       include: {
         merchant: { select: { name: true } },
         cuttingLogs: { select: { fabricUsedMeters: true } },
+        colors: { select: { id: true, color: true } },
         _count: { select: { assignments: true } },
       },
       orderBy: { createdAt: "desc" },
@@ -45,6 +46,9 @@ export async function POST(request: Request) {
         ratePerPiece: parsed.data.ratePerPiece,
         totalPiecesPlanned: parsed.data.totalPiecesPlanned ?? null,
         dateReceived: new Date(parsed.data.dateReceived),
+        colors: parsed.data.colors?.length
+          ? { create: parsed.data.colors.filter(c => c !== parsed.data.color).map(c => ({ color: c })) }
+          : undefined,
       },
       include: {
         merchant: { select: { name: true } },

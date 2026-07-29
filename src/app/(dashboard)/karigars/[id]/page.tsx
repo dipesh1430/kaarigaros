@@ -21,6 +21,7 @@ import { KarigarDetailSkeleton } from "@/components/karigars/KarigarDetailSkelet
 import { KarigarFormSheet } from "@/components/karigars/KarigarFormSheet";
 import { WithdrawalForm } from "@/components/karigars/WithdrawalForm";
 import { SetPinForm } from "@/components/karigars/SetPinForm";
+import { KarigarRates } from "@/components/karigars/KarigarRates";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -63,6 +64,7 @@ interface KarigarFull {
   phone: string;
   active: boolean;
   selfPickup: boolean;
+  hasPin: boolean;
   assignments: AssignmentData[];
   ledgerEntries: LedgerEntryData[];
   settlements: SettlementData[];
@@ -336,10 +338,8 @@ function OverviewTab({ karigar }: { karigar: KarigarFull }) {
       </div>
 
       {/* Portal PIN */}
-      <SetPinForm
-        karigarId={karigar.id}
-        hasPin={false}
-      />
+      <SetPinForm karigarId={karigar.id} hasPin={karigar.hasPin} />
+      <KarigarRates karigarId={karigar.id} />
     </div>
   );
 }

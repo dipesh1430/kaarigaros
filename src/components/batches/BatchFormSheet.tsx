@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-import { Plus, X, Loader2 } from "lucide-react";
+import { Plus, X, Loader2, Tag } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { BatchFormValues } from "@/lib/validations/batch.schema";
 import { batchSchema } from "@/lib/validations/batch.schema";
@@ -24,11 +24,14 @@ export function BatchFormSheet({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [additionalColors, setAdditionalColors] = useState<string[]>([]);
+  const [newColor, setNewColor] = useState("");
 
   const {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<BatchFormValues>({
     resolver: zodResolver(batchSchema),
@@ -59,8 +62,24 @@ export function BatchFormSheet({
     }
   }, [open, merchantId, reset]);
 
+  function addColor() {
+    const trimmed = newColor.trim();
+    if (trimmed && !additionalColors.includes(trimmed) && trimmed !== watchColor) {
+      setAdditionalColors([...additionalColors, trimmed]);
+    }
+    setNewColor("");
+  }
+
+  function removeColor(color: string) {
+    setAdditionalColors(additionalColors.filter((c) => c !== color));
+  }
+
+  const watchColor = watch("color");
+
   function handleClose() {
     setOpen(false);
+    setAdditionalColors([]);
+    setNewColor("");
     reset();
   }
 
@@ -70,7 +89,10 @@ export function BatchFormSheet({
       const res = await fetch("/api/batches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          colors: [data.color, ...additionalColors],
+        }),
       });
 
       if (!res.ok) {
@@ -78,8 +100,9 @@ export function BatchFormSheet({
         throw new Error(err.error || "Something went wrong");
       }
 
+      const allColors = [data.color, ...additionalColors];
       toast.success("Batch created successfully", {
-        description: `${data.designName} — ${data.color}`,
+        description: `${data.designName} — ${allColors.length} color${allColors.length > 1 ? "s" : ""}`,
       });
 
       handleClose();
@@ -159,40 +182,76 @@ export function BatchFormSheet({
                   )}
                 </div>
 
-                {/* Color + Garment Type side by side */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">
-                      Color <span className="text-destructive">*</span>
-                    </label>
+                {/* Colors + Garment Type */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-foreground">
+                    Colors <span className="text-destructive">*</span>
+                  </label>
+                  <div className="flex gap-2">
                     <input
                       {...register("color")}
                       placeholder="e.g. Red"
-                      className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="flex-1 rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                     />
-                    {errors.color && (
-                      <p className="text-xs text-destructive">
-                        {errors.color.message}
-                      </p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">
-                      Garment <span className="text-destructive">*</span>
-                    </label>
                     <select
                       {...register("garmentType")}
-                      className="w-full rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                      className="w-28 rounded-lg border border-input bg-background px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                     >
                       <option value="kurti">Kurti</option>
                       <option value="pant">Pant</option>
                     </select>
-                    {errors.garmentType && (
-                      <p className="text-xs text-destructive">
-                        {errors.garmentType.message}
-                      </p>
-                    )}
                   </div>
+                  {errors.color && (
+                    <p className="text-xs text-destructive">{errors.color.message}</p>
+                  )}
+                  {errors.garmentType && (
+                    <p className="text-xs text-destructive">{errors.garmentType.message}</p>
+                  )}
+
+                  {/* Add more colors */}
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newColor}
+                      onChange={(e) => setNewColor(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addColor())}
+                      placeholder="Add another color..."
+                      className="flex-1 rounded-lg border border-dashed border-input bg-muted/30 px-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
+                    <button
+                      type="button"
+                      onClick={addColor}
+                      disabled={!newColor.trim()}
+                      className="rounded-lg border border-input px-3 py-2 text-xs font-medium text-muted-foreground hover:bg-muted disabled:opacity-40"
+                    >
+                      Add
+                    </button>
+                  </div>
+
+                  {/* Color tags */}
+                  {additionalColors.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {additionalColors.map((c) => (
+                        <span
+                          key={c}
+                          className="inline-flex items-center gap-1 rounded-full bg-secondary/10 px-2.5 py-1 text-xs font-medium text-secondary"
+                        >
+                          <Tag className="h-3 w-3" />
+                          {c}
+                          <button
+                            type="button"
+                            onClick={() => removeColor(c)}
+                            className="ml-0.5 text-secondary/60 hover:text-secondary"
+                          >
+                            ✕
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    Add primary color first, then any additional colors for this design
+                  </p>
                 </div>
 
                 {/* Fabric + Rate */}

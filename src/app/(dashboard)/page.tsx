@@ -26,7 +26,7 @@ interface DashboardData {
   payableToKarigars: number;
   receivable: number;
   cashFlowGap: number;
-  recentActivity: { id: number; designName: string; color: string; status: string; updatedAt: string }[];
+  recentActivity: { id: number; designName: string; color: string; status: string; createdAt: string }[];
   batchStatusCounts: { status: string; _count: { status: number } }[];
   pendingPaymentRequests: number;
 }
@@ -36,6 +36,7 @@ const STATUS_ORDER = ["received", "cutting", "stitching", "interlock", "press", 
 export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDashboard();
@@ -43,12 +44,19 @@ export default function DashboardPage() {
 
   async function fetchDashboard() {
     try {
+      setError(null);
       const res = await fetch("/api/dashboard");
-      if (res.ok) {
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        setError(body?.error || "Failed to fetch dashboard");
+        setData(null);
+      } else {
         setData(await res.json());
       }
     } catch (err) {
       console.error("Failed to fetch dashboard:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch dashboard");
+      setData(null);
     } finally {
       setLoading(false);
     }
@@ -68,7 +76,26 @@ export default function DashboardPage() {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="space-y-6">
+        <div className="rounded-xl border border-border bg-card p-6 text-center">
+          <p className="text-sm text-muted-foreground">{error ?? "No dashboard data available."}</p>
+          <div className="mt-4">
+            <button
+              onClick={() => {
+                setLoading(true);
+                fetchDashboard();
+              }}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -108,7 +135,7 @@ export default function DashboardPage() {
           <KpiCard
             title="Cash Flow Gap"
             value={formatCurrency(data.cashFlowGap)}
-            subtitle={data.cashFlowGap >= 0 ? "You're ahead" : "You owe more than owed"}
+            subtitle={data.cashFlowGap >= 0 ? "You're ahead" : "You're behind"}
             icon={data.cashFlowGap >= 0 ? TrendingUp : TrendingDown}
             color={data.cashFlowGap >= 0 ? "text-success" : "text-destructive"}
           />
@@ -216,7 +243,7 @@ export default function DashboardPage() {
                           </span>
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          Updated {formatDate(item.updatedAt)}
+                          Updated {formatDate(item.createdAt)}
                         </p>
                       </div>
                       <StatusBadge status={item.status} />

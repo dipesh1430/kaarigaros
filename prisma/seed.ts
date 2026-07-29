@@ -104,6 +104,13 @@ async function main() {
       totalPiecesPlanned: 500,
       dateReceived: new Date("2026-07-01"),
       status: "received",
+      colors: {
+        create: [
+          { color: "Red" },
+          { color: "Blue" },
+          { color: "Green" },
+        ],
+      },
     },
   });
   console.log(`✓ Sample batch: ${batch.designName} (${batch.color})`);

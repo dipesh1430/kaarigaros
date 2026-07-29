@@ -23,14 +23,7 @@ export async function GET() {
       }),
 
       // Pending payouts — sum of unpaid completed assignments
-      prisma.karigarAssignment.aggregate({
-        where: {
-          status: "completed",
-          settlementItems: { none: {} },
-        },
-        _sum: { piecesReturned: true },
-      }),
-      // Also need rates. We'll compute from assignments directly
+      // Pending payouts — we'll compute from assignments directly
       prisma.karigarAssignment.findMany({
         where: {
           status: "completed",
@@ -48,7 +41,7 @@ export async function GET() {
         _sum: { netAmount: true },
       }),
 
-      // Recent activity — last 10 changes
+      // Recent activity — last 10 changes (use updatedAt so status changes surface)
       prisma.batch.findMany({
         select: {
           id: true,
@@ -74,9 +67,9 @@ export async function GET() {
     ]);
 
     // Compute payable from assignments data
-    const payableAssignments = payableResult as unknown as {
+    const payableAssignments = payableResult as {
       piecesReturned: number | null;
-      batch: { ratePerPiece: string | number };
+      batch: { ratePerPiece: any };
     }[];
 
     const payableToKarigars = payableAssignments.reduce((sum, a) => {
@@ -85,9 +78,7 @@ export async function GET() {
       return sum + rate * pieces;
     }, 0);
 
-    const receivable = Number(
-      (receivableResult as any)._sum?.netAmount ?? 0
-    );
+    const receivable = Number(receivableResult._sum?.netAmount ?? 0);
 
     return NextResponse.json({
       activeBatches,

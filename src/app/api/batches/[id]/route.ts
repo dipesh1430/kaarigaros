@@ -18,6 +18,7 @@ export async function GET(_request: Request, context: RouteContext) {
       where: { id: batchId },
       include: {
         merchant: { select: { name: true, id: true } },
+        colors: { select: { id: true, color: true } },
         cuttingLogs: { orderBy: { cuttingDate: "desc" } },
         assignments: {
           include: {

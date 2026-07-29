@@ -1,28 +1,30 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { calculateSettlementPreview } from "@/lib/calculations/settlement-engine";
-import jwt from "jsonwebtoken";
-
-const JWT_SECRET = process.env.KARIGAR_JWT_SECRET || "kaarigar-portal-secret-change-me";
-
-function getKarigarId(request: Request): number | null {
-  try {
-    const authHeader = request.headers.get("authorization");
-    if (!authHeader?.startsWith("Bearer ")) return null;
-    const token = authHeader.slice(7);
-    const decoded = jwt.verify(token, JWT_SECRET) as { karigarId: number };
-    return decoded.karigarId;
-  } catch {
-    return null;
-  }
-}
+import { getKarigarIdFromRequest } from "@/lib/karigar-jwt";
 
 export async function GET(request: Request) {
   try {
+    const karigarId = getKarigarIdFromRequest(request);
+    const adminBearer = process.env.ADMIN_BEARER_TOKEN;
+
+    if (karigarId) {
+      const requests = await prisma.paymentRequest.findMany({
+        where: { karigarId },
+        include: { karigar: { select: { id: true, name: true } } },
+        orderBy: { requestedAt: "desc" },
+      });
+      return NextResponse.json(requests);
+    }
+
+    // Dashboard/admin caller must present the admin bearer token
+    const authHeader = request.headers.get("authorization");
+    if (!adminBearer || authHeader !== `Bearer ${adminBearer}`) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const requests = await prisma.paymentRequest.findMany({
-      include: {
-        karigar: { select: { id: true, name: true, phone: true } },
-      },
+      include: { karigar: { select: { id: true, name: true } } },
       orderBy: { requestedAt: "desc" },
     });
 
@@ -39,7 +41,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     // Verify this is a karigar request via JWT
-    const karigarId = getKarigarId(request);
+    const karigarId = getKarigarIdFromRequest(request);
     if (!karigarId) {
       return NextResponse.json(
         { error: "Unauthorized" },

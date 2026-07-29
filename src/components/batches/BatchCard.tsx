@@ -10,6 +10,7 @@ interface BatchCardProps {
   id: number;
   designName: string;
   color: string;
+  colors?: { id: number; color: string }[];
   garmentType: string;
   status: string;
   dateReceived: string;
@@ -19,10 +20,13 @@ export function BatchCard({
   id,
   designName,
   color,
+  colors,
   garmentType,
   status,
   dateReceived,
 }: BatchCardProps) {
+  const allColors = colors?.filter((c) => c.color !== color).map((c) => c.color) ?? [];
+  const displayColors = [color, ...allColors];
   return (
     <motion.div
       variants={{
@@ -50,14 +54,20 @@ export function BatchCard({
             <span className="truncate text-sm font-semibold text-foreground">
               {designName}
             </span>
-            <span className="shrink-0 text-xs text-muted-foreground">
-              {color}
-            </span>
           </div>
-          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="capitalize">{garmentType}</span>
-            <span>·</span>
-            <span>{formatDate(dateReceived)}</span>
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
+            {displayColors.map((c) => (
+              <span
+                key={c}
+                className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
+              >
+                {c}
+              </span>
+            ))}
+            <span className="text-muted-foreground">·</span>
+            <span className="capitalize text-muted-foreground">{garmentType}</span>
+            <span className="text-muted-foreground">·</span>
+            <span className="text-muted-foreground">{formatDate(dateReceived)}</span>
           </div>
         </div>
 

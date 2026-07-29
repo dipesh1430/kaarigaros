@@ -41,6 +41,22 @@ model Karigar {
   settlements     KarigarSettlement[]
   ledgerEntries   KarigarLedger[]
   paymentRequests PaymentRequest[]
+  rates           KarigarRate[]
+}
+
+model KarigarRate {
+  id           Int         @id @default(autoincrement())
+  karigar      Karigar     @relation(fields: [karigarId], references: [id])
+  karigarId    Int
+  designName   String      @db.VarChar(100)
+  color        String?     @db.VarChar(50)
+  garmentType  GarmentType?
+  ratePerPiece Decimal     @db.Decimal(10, 2)
+  notes        String?
+  active       Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+
+  @@unique([karigarId, designName, color])
 }
 
 enum KarigarType {
@@ -84,6 +100,14 @@ model Batch {
   qualityChecks  QualityCheck[]
   dispatches     Dispatch[]
   samplePieces   SamplePiece[]
+  colors         BatchColor[]
+}
+
+model BatchColor {
+  id      Int    @id @default(autoincrement())
+  batch   Batch  @relation(fields: [batchId], references: [id])
+  batchId Int
+  color   String @db.VarChar(50)
 }
 
 enum GarmentType {
